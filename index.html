@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تقرير المهام</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+body{font-family:Arial;background:#0a0f1f;color:#fff;padding:20px}
+.container{max-width:700px;margin:auto;background:#111827;padding:20px;border-radius:15px;border:1px solid #334155}
+input,select{width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#fff}
+.row{display:flex;gap:10px}
+.flex-row{display:flex;gap:8px;align-items:center}
+button{width:100%;margin-top:15px;padding:12px;border:none;border-radius:10px;background:#16a34a;color:#fff}
+.small-btn{width:45px;background:#374151}
+.output{margin-top:20px;background:#0b1220;padding:15px;border-radius:10px;white-space:pre-wrap}
+
+/* أيقونة */
+.input-icon{position:relative}
+.input-icon i{position:absolute;top:50%;right:12px;transform:translateY(-50%);color:#9ca3af;pointer-events:none}
+.input-icon input{padding-right:40px}
+
+/* منبه */
+.alarm-box{margin-top:15px;background:#0b1220;padding:12px;border-radius:10px;text-align:center}
+.alarm-controls{display:flex;justify-content:center;gap:10px}
+.alarm-controls button{width:40px;height:40px;border-radius:50%}
+.start-btn{background:#2563eb}
+.stop-btn{background:#dc2626}
+.test-btn{background:#f59e0b}
+.countdown{margin-top:8px}
+.footer{margin-top:15px;text-align:center}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>نموذج تقرير مهام</h2>
+
+<label>اسم التوجية:</label>
+<div class="flex-row">
+<select id="task_select">
+<option value="">-- اختر --</option>
+<option>صقر 1</option><option>صقر 2</option>
+<option>صقر 3</option><option>صقر 4</option>
+<option>صقر 5</option><option>صقر 6</option>
+<option>شمال 1</option><option>جنوب 1</option>
+<option>شرق 1</option><option>غرب 1</option>
+<option>برق 1</option><option>برق 2</option>
+<option>برق 3</option><option>برق 4</option>
+<option value="custom">✏️ أخرى</option>
+</select>
+<button class="small-btn" onclick="task_custom.style.display='block'">✏️</button>
+</div>
+<input id="task_custom" style="display:none">
+
+<label>من الساعة:</label>
+<div class="row">
+<input id="from_hour" oninput="autoAMPM('from_hour','from_ampm')">
+<input id="from_min">
+<select id="from_ampm"><option>ص</option><option>م</option></select>
+</div>
+
+<label>إلى الساعة:</label>
+<div class="row">
+<input id="to_hour" oninput="autoAMPM('to_hour','to_ampm')">
+<input id="to_min">
+<select id="to_ampm"><option>ص</option><option>م</option></select>
+</div>
+
+<label>المنطقة:</label>
+<div class="flex-row">
+<select id="area_select">
+<option value="">-- اختر --</option>
+<option>لوس</option>
+<option>الميناء</option>
+<option value="custom">✏️ أخرى</option>
+</select>
+<button class="small-btn" onclick="area_custom.style.display='block'">✏️</button>
+</div>
+<input id="area_custom" style="display:none">
+
+<label>الدورات:</label>
+<select id="courses">
+<option>لايوجد</option>
+<option>امن وحماية</option>
+<option>الدعم الجوي</option>
+<option>خفر السواحل</option>
+<option>SWAT</option>
+</select>
+
+<label>الرتبة:</label>
+<div class="input-icon">
+<i class="fa-solid fa-user-shield"></i>
+<input id="name" placeholder="اكتب الرتبة">
+</div>
+
+<label>ID ديسكورد:</label>
+<input id="id">
+
+<div class="output" id="output"></div>
+
+<button onclick="copy()">نسخ</button>
+
+<div class="alarm-box">
+🔔 منبه كل ساعة
+<div id="countdown">--</div>
+
+<div class="alarm-controls">
+<button class="start-btn" onclick="startAlarm()">▶️</button>
+<button class="stop-btn" onclick="stopAlarm()">⛔</button>
+<button class="test-btn" onclick="testSound()">🔊</button>
+</div>
+</div>
+
+<div class="footer">DAR ©</div>
+</div>
+
+<audio id="alarmSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_115b9b5c6b.mp3"></audio>
+
+<script>
+function autoAMPM(id,ampm){
+let h=parseInt(document.getElementById(id).value);
+if(!isNaN(h)) document.getElementById(ampm).value=(h>=12?"م":"ص");
+}
+
+function build(){
+let task=(task_select.value==="custom")?task_custom.value.trim():task_select.value;
+let area=(area_select.value==="custom")?area_custom.value.trim():area_select.value;
+
+task=task||"غير محدد";
+area=area||"غير محدد";
+
+let from=(from_hour.value&&from_min.value)?
+`${from_hour.value}:${from_min.value} ${from_ampm.value}`:"غير محدد";
+
+let to=(to_hour.value&&to_min.value)?
+`${to_hour.value}:${to_min.value} ${to_ampm.value}`:"غير محدد";
+
+let name_val=document.getElementById("name").value.trim()||"غير معروف";
+let id_val=id.value.trim()||"0";
+
+return `** تـم اسـتـلام مـهـام (${task}) من السـاعة : ${from} اٍلـى الـساعة : ${to}**
+
+** الـمـنـطـقـة : ${area} **
+
+** الــدورات الامــنـيــة المـــتــواجــده :**
+** ${courses.value} **
+
+** تم رفـــع التـقـريـر من قبــل (${name_val}) :**
+> <@${id_val}>`;
+}
+
+function update(){output.innerText=build();}
+document.querySelectorAll('input,select').forEach(e=>e.addEventListener('input',update));
+
+function copy(){
+navigator.clipboard.writeText(build()).then(()=>alert("تم النسخ"));
+}
+
+/* 🔔 المنبه الثابت */
+let timer=null;
+let alertLoop=null;
+
+function startAlarm(){
+
+if(timer) return;
+
+/* وقت نهاية الساعة */
+let endTime=localStorage.getItem("alarmEnd");
+
+if(!endTime){
+endTime=Date.now() + 3600*1000;
+localStorage.setItem("alarmEnd",endTime);
+}
+
+updateCountdown();
+
+timer=setInterval(updateCountdown,1000);
+}
+
+function updateCountdown(){
+
+let endTime=parseInt(localStorage.getItem("alarmEnd"));
+
+if(!endTime) return;
+
+let remaining=Math.floor((endTime-Date.now())/1000);
+
+if(remaining<=0){
+
+startAlertLoop();
+
+/* إعادة تشغيل ساعة جديدة */
+endTime=Date.now()+3600*1000;
+localStorage.setItem("alarmEnd",endTime);
+
+remaining=3600;
+}
+
+let m=Math.floor(remaining/60);
+let s=remaining%60;
+
+countdown.innerText=`⏳ ${m}د ${s}ث`;
+}
+
+function stopAlarm(){
+
+clearInterval(timer);
+timer=null;
+
+clearInterval(alertLoop);
+alertLoop=null;
+
+alarmSound.pause();
+alarmSound.currentTime=0;
+
+speechSynthesis.cancel();
+
+localStorage.removeItem("alarmEnd");
+
+countdown.innerText="--";
+}
+
+function testSound(){
+startAlertLoop();
+}
+
+function startAlertLoop(){
+
+if(alertLoop) return;
+
+alertLoop=setInterval(()=>{
+alarmSound.play();
+speakAlert();
+},4000);
+}
+
+function speakAlert(){
+
+let msg=new SpeechSynthesisUtterance(
+"لا تنسى التقرير الاشرافي تنزله مع التاكد من المسمى والوقت"
+);
+
+msg.lang="ar-SA";
+
+speechSynthesis.speak(msg);
+}
+
+/* استكمال بعد تحديث الصفحة */
+window.addEventListener("load",()=>{
+
+let endTime=localStorage.getItem("alarmEnd");
+
+if(endTime){
+
+startAlarm();
+  }
+});
+
+</script>
+
+</body>
+</html>
